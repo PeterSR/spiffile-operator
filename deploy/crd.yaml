@@ -1,0 +1,178 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: serviceidentities.spiffile.io
+spec:
+  group: spiffile.io
+  names:
+    kind: ServiceIdentity
+    listKind: ServiceIdentityList
+    plural: serviceidentities
+    singular: serviceidentity
+    shortNames:
+      - svcid
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      subresources:
+        status: {}
+      additionalPrinterColumns:
+        - name: SPIFFE ID
+          type: string
+          jsonPath: .status.spiffeID
+        - name: Ready
+          type: boolean
+          jsonPath: .status.ready
+        - name: Age
+          type: date
+          jsonPath: .metadata.creationTimestamp
+      schema:
+        openAPIV3Schema:
+          type: object
+          required: [spec]
+          properties:
+            spec:
+              type: object
+              required: [trustDomain]
+              properties:
+                trustDomain:
+                  type: string
+                  description: SPIFFE trust domain, e.g. example.org.
+                  pattern: "^[a-z0-9._-]+$"
+                path:
+                  type: string
+                  description: SPIFFE ID path (no leading slash). Defaults to the object name.
+                  pattern: "^[a-zA-Z0-9._-]+(/[a-zA-Z0-9._-]+)*$"
+                secretName:
+                  type: string
+                  description: Name of the identity Secret. Defaults to <name>-spiffile.
+                rotationOverlap:
+                  type: string
+                  description: How long rotated-out keys stay in the bundle (e.g. 24h).
+            status:
+              type: object
+              properties:
+                spiffeID:
+                  type: string
+                keyID:
+                  type: string
+                lastRotateValue:
+                  type: string
+                ready:
+                  type: boolean
+                message:
+                  type: string
+                previousKeys:
+                  type: array
+                  items:
+                    type: object
+                    required: [jwk, expiresAt]
+                    properties:
+                      jwk:
+                        type: string
+                      expiresAt:
+                        type: string
+                        format: date-time
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: serviceidentityclaims.spiffile.io
+spec:
+  group: spiffile.io
+  names:
+    kind: ServiceIdentityClaim
+    listKind: ServiceIdentityClaimList
+    plural: serviceidentityclaims
+    singular: serviceidentityclaim
+    shortNames:
+      - svcidclaim
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      subresources:
+        status: {}
+      additionalPrinterColumns:
+        - name: SPIFFE ID
+          type: string
+          jsonPath: .status.spiffeID
+        - name: Ready
+          type: boolean
+          jsonPath: .status.ready
+        - name: Message
+          type: string
+          jsonPath: .status.message
+        - name: Age
+          type: date
+          jsonPath: .metadata.creationTimestamp
+      schema:
+        openAPIV3Schema:
+          type: object
+          required: [spec]
+          properties:
+            spec:
+              type: object
+              required: [trustDomain, source]
+              properties:
+                trustDomain:
+                  type: string
+                  description: SPIFFE trust domain, e.g. example.org.
+                  pattern: "^[a-z0-9._-]+$"
+                path:
+                  type: string
+                  description: SPIFFE ID path (no leading slash). Defaults to the object name.
+                  pattern: "^[a-zA-Z0-9._-]+(/[a-zA-Z0-9._-]+)*$"
+                secretName:
+                  type: string
+                  description: >
+                    Rendezvous name, not a pointer: the agreed name at which
+                    the delivery mechanism must place the key Secret (data
+                    keys "id" and "key.pem") in this namespace; also the
+                    Secret pods mount. Defaults to <name>-spiffile. The
+                    Secret is externally owned in all cases - the operator
+                    only reads and validates it, never writes or deletes it.
+                source:
+                  type: object
+                  description: >
+                    Where the identity material comes from. Exactly one member
+                    must be set. Future source modes (e.g. a direct store
+                    reader, or generating ExternalSecrets) are added as new
+                    members; the consumer contract never changes.
+                  x-kubernetes-validations:
+                    - rule: "[has(self.delivered)].filter(x, x).size() == 1"
+                      message: "exactly one source mode must be set"
+                  properties:
+                    delivered:
+                      type: object
+                      description: Identity material is handed to the operator as Kubernetes objects by a courier (ESO, scripts, CI).
+                      required: [bundleFrom]
+                      properties:
+                        bundleFrom:
+                          type: object
+                          description: Externally delivered trust bundle document.
+                          properties:
+                            secretRef:
+                              type: object
+                              required: [name]
+                              properties:
+                                name: { type: string }
+                                key: { type: string }
+                                namespace: { type: string }
+                            configMapRef:
+                              type: object
+                              required: [name]
+                              properties:
+                                name: { type: string }
+                                key: { type: string }
+                                namespace: { type: string }
+            status:
+              type: object
+              properties:
+                spiffeID: { type: string }
+                keyID: { type: string }
+                ready: { type: boolean }
+                message: { type: string }

@@ -1,0 +1,62 @@
+# Optional pod-injection webhook. Requires cert-manager.
+#
+# Injection applies only in namespaces labeled:
+#   spiffile.io/injection: enabled
+# Pods opt in with the spiffile.io/identity (or spiffile.io/inject) annotation.
+apiVersion: v1
+kind: Service
+metadata:
+  name: spiffile-operator-webhook
+  namespace: spiffile-system
+spec:
+  selector:
+    app.kubernetes.io/name: spiffile-operator
+  ports:
+    - port: 443
+      targetPort: webhook
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: spiffile-webhook-selfsigned
+  namespace: spiffile-system
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: spiffile-webhook-cert
+  namespace: spiffile-system
+spec:
+  secretName: spiffile-webhook-server-cert
+  dnsNames:
+    - spiffile-operator-webhook.spiffile-system.svc
+    - spiffile-operator-webhook.spiffile-system.svc.cluster.local
+  issuerRef:
+    name: spiffile-webhook-selfsigned
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: spiffile-pod-injection
+  annotations:
+    cert-manager.io/inject-ca-from: spiffile-system/spiffile-webhook-cert
+webhooks:
+  - name: inject.spiffile.io
+    admissionReviewVersions: ["v1"]
+    sideEffects: None
+    failurePolicy: Fail
+    namespaceSelector:
+      matchLabels:
+        spiffile.io/injection: enabled
+    rules:
+      - apiGroups: [""]
+        apiVersions: ["v1"]
+        operations: ["CREATE"]
+        resources: ["pods"]
+    clientConfig:
+      service:
+        name: spiffile-operator-webhook
+        namespace: spiffile-system
+        path: /inject-pod
