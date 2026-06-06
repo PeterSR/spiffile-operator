@@ -1,0 +1,10 @@
+version: "2"
+
+linters:
+  exclusions:
+    rules:
+      # Explicit embedded-field selectors (in.ObjectMeta.DeepCopyInto) are the
+      # Kubernetes API convention — controller-gen emits exactly this pattern.
+      - text: "QF1008"
+        linters:
+          - staticcheck
