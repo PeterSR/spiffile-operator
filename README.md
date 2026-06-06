@@ -65,7 +65,7 @@ callers, fully offline.
 
 **Alpha.** The `v1alpha1` API may change in breaking ways before v1.0 —
 [CHANGELOG.md](CHANGELOG.md) will call them out. Built and tested against the
-Kubernetes 1.32 client libraries; recent clusters are expected to work.
+Kubernetes 1.36 client libraries; recent clusters are expected to work.
 
 ## Install
 
