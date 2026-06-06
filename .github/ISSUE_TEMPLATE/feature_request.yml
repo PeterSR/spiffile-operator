@@ -1,0 +1,23 @@
+name: Feature request
+description: Propose an enhancement
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem are you trying to solve?
+      description: The use case first — the proposed mechanism second.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: >
+        If it touches the CRDs or the bundle contract, note how it fits the
+        invariants in docs/store-backend.md (consumer contract never changes;
+        a trust domain is cluster-backed or externally-backed, never both).
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
