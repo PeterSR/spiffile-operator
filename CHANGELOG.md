@@ -8,6 +8,21 @@ Until v1.0.0, minor versions may contain breaking changes to the `v1alpha1` API.
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-06-06
+
+### Changed
+
+- Depend on the released spiffile library v0.0.2.
+- Update to the Kubernetes 1.36 client libraries and controller-runtime 0.24.
+- Build release images with Go 1.26.
+
+### Added
+
+- Artifact Hub annotations and repository metadata for the Helm chart.
+- README quick start and image signature verification examples.
+
+## [0.1.0] - 2026-06-06
+
 ### Added
 
 - `ServiceIdentity` CRD: declare an identity, get a keypair Secret and
@@ -21,4 +36,6 @@ Until v1.0.0, minor versions may contain breaking changes to the `v1alpha1` API.
 - `kubectl-spiffile` plugin with `extract` for zero-downtime migration of a
   trust domain out of the cluster.
 
-[Unreleased]: https://github.com/PeterSR/spiffile-operator/commits/main
+[Unreleased]: https://github.com/PeterSR/spiffile-operator/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/PeterSR/spiffile-operator/compare/v0.1.0...v0.1.1
+[0.1.0]: https://github.com/PeterSR/spiffile-operator/releases/tag/v0.1.0
