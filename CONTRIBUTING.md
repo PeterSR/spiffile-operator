@@ -5,13 +5,8 @@ requests are welcome.
 
 ## Development setup
 
-The operator depends on the [spiffile Go library](https://github.com/PeterSR/spiffile).
-Until that module is published, `go.mod` resolves it via a local `replace`
-directive — clone both repos side by side:
-
 ```bash
 git clone https://github.com/PeterSR/spiffile-operator
-git clone https://github.com/PeterSR/spiffile
 cd spiffile-operator
 ```
 

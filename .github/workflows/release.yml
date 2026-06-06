@@ -4,9 +4,6 @@
 #   image: ghcr.io/petersr/spiffile-operator:X.Y.Z (+ latest), amd64+arm64,
 #          keyless-signed with cosign, with SLSA provenance + SBOM attached
 #   chart: oci://ghcr.io/petersr/charts/spiffile-operator:X.Y.Z
-#
-# Prerequisite: the spiffile Go library is published (the local `replace`
-# directive removed from go.mod) so the Dockerfile builds standalone.
 name: release
 
 on:

@@ -3,6 +3,7 @@ module github.com/PeterSR/spiffile-operator
 go 1.25.0
 
 require (
+	github.com/PeterSR/spiffile/go v0.0.0-20260606182324-51f2ffc536f5
 	k8s.io/api v0.32.3
 	k8s.io/apimachinery v0.32.3
 	k8s.io/client-go v0.32.3
@@ -65,8 +66,3 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.2 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
-
-// Until the spiffile repo is published, resolve the profile library locally.
-replace github.com/PeterSR/spiffile/go => ../spiffile/go
-
-require github.com/PeterSR/spiffile/go v0.0.0
