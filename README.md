@@ -91,6 +91,46 @@ kubectl apply -f deploy/operator.yaml   # set the image first
 kubectl apply -f deploy/webhook.yaml    # optional pod injection (needs cert-manager)
 ```
 
+Released images are multi-arch (amd64/arm64), keyless-signed and carry SLSA
+provenance + SBOM — verify before trusting:
+
+```bash
+cosign verify ghcr.io/petersr/spiffile-operator:0.1.0 \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  --certificate-identity-regexp 'https://github.com/PeterSR/spiffile-operator/.+@refs/tags/v0.1.0'
+```
+
+## Quick start
+
+With the operator installed, declare an identity and watch it become ready:
+
+```bash
+kubectl create namespace shop
+kubectl apply -f - <<EOF
+apiVersion: spiffile.io/v1alpha1
+kind: ServiceIdentity
+metadata:
+  name: billing
+  namespace: shop
+spec:
+  trustDomain: example.org
+EOF
+
+kubectl get serviceidentities -n shop
+# NAME      SPIFFE ID                      READY   AGE
+# billing   spiffe://example.org/billing   true    5s
+```
+
+The operator now maintains Secret `billing-spiffile` and ConfigMap
+`spiffile-bundle` in `shop`. Mount them as shown [above](#spiffile-operator) —
+or skip the mounting boilerplate entirely with [pod
+injection](#pod-injection-optional). Key rotation is one command away:
+
+```bash
+kubectl annotate serviceidentity billing -n shop \
+  spiffile.io/rotate="$(date -Is)" --overwrite
+```
+
 ## Pod injection (optional)
 
 Without injection, workloads mount the Secret/ConfigMap explicitly (above).
