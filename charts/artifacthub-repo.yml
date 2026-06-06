@@ -9,6 +9,6 @@
 # Set repositoryID after creating the repository entry on artifacthub.io
 # (Control Panel -> Add repository -> kind "Helm charts OCI",
 #  URL oci://ghcr.io/petersr/charts/spiffile-operator).
-repositoryID: SET-AFTER-CREATING-REPO-ON-ARTIFACTHUB
+repositoryID: dfa51c13-f594-499e-881f-023204c8f032
 owners:
   - name: Peter Severin Rasmussen
