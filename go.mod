@@ -3,7 +3,7 @@ module github.com/PeterSR/spiffile-operator
 go 1.25.0
 
 require (
-	github.com/PeterSR/spiffile/go v0.0.0-20260606182324-51f2ffc536f5
+	github.com/PeterSR/spiffile/go v0.0.1
 	k8s.io/api v0.32.3
 	k8s.io/apimachinery v0.32.3
 	k8s.io/client-go v0.32.3
