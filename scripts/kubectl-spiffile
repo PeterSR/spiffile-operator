@@ -1,0 +1,95 @@
+#!/usr/bin/env bash
+# kubectl plugin for spiffile operations.
+#
+# Install: place this file on your PATH as `kubectl-spiffile` (chmod +x).
+# Then:   kubectl spiffile <command> [args]
+#
+# Commands:
+#   extract <trust-domain> <outdir> [kubectl args...]
+#       Extract a trust domain's cluster-backed identity material into the
+#       standard spiffile writer-root layout:
+#
+#         <outdir>/
+#           bundle.json                # the trust bundle
+#           services/<path>/id         # each identity's SPIFFE ID
+#           services/<path>/key.pem    # each identity's private key
+#
+#       This layout is what every spiffile library's provision module
+#       produces and consumes — push it to a store, encrypt it into git, or
+#       hand it to writer tooling; the extract is deliberately
+#       store-agnostic. Only ServiceIdentity-backed material is extracted,
+#       never claim-delivered Secrets.
+#
+#       Extra args are passed to kubectl (e.g. --context CTX).
+set -euo pipefail
+
+usage() {
+  sed -n '2,22p' "$0" | sed 's/^# \{0,1\}//'
+  exit "${1:-0}"
+}
+
+extract() {
+  local trust_domain="${1:?usage: kubectl spiffile extract <trust-domain> <outdir> [kubectl args...]}"
+  local outdir="${2:?usage: kubectl spiffile extract <trust-domain> <outdir> [kubectl args...]}"
+  shift 2
+  local extra=("$@")
+
+  if [ -e "$outdir/bundle.json" ]; then
+    echo "refusing to overwrite existing $outdir/bundle.json" >&2
+    exit 1
+  fi
+  mkdir -p "$outdir/services"
+
+  echo "extracting trust domain '$trust_domain'..."
+
+  # ServiceIdentities of the trust domain -> their Secrets.
+  kubectl get serviceidentities --all-namespaces -o json "${extra[@]}" \
+    | jq -r --arg td "$trust_domain" '
+        .items[]
+        | select(.spec.trustDomain == $td)
+        | [.metadata.namespace,
+           (.spec.secretName // (.metadata.name + "-spiffile")),
+           (.status.spiffeID // "")]
+        | @tsv' \
+    | while IFS=$'\t' read -r namespace secret spiffe_id; do
+        if [ -z "$spiffe_id" ]; then
+          echo "  WARNING: skipping $namespace/$secret (no status.spiffeID — not Ready?)" >&2
+          continue
+        fi
+        local path="${spiffe_id#spiffe://"$trust_domain"/}"
+        local dir="$outdir/services/$path"
+        mkdir -p "$dir"
+        kubectl get secret "$secret" -n "$namespace" -o jsonpath='{.data.key\.pem}' "${extra[@]}" \
+          | base64 -d > "$dir/key.pem"
+        chmod 600 "$dir/key.pem"
+        printf '%s\n' "$spiffe_id" > "$dir/id"
+        echo "  $spiffe_id -> services/$path/"
+      done
+
+  # The trust bundle: take it from any namespace's spiffile-bundle ConfigMap.
+  kubectl get configmap --all-namespaces -l app.kubernetes.io/managed-by=spiffile-operator -o json "${extra[@]}" \
+    | jq -r --arg key "$trust_domain.json" '
+        [.items[] | .data[$key] // empty] | first // error("no bundle found for trust domain")' \
+    > "$outdir/bundle.json"
+  echo "  bundle -> bundle.json"
+
+  echo "done: $outdir"
+  echo
+  echo "Private keys are on disk now — treat $outdir accordingly, and delete it"
+  echo "once the material has reached its destination."
+}
+
+command="${1:-}"
+case "$command" in
+  extract)
+    shift
+    extract "$@"
+    ;;
+  -h | --help | help | "")
+    usage
+    ;;
+  *)
+    echo "unknown command: $command" >&2
+    usage 1
+    ;;
+esac
