@@ -55,6 +55,10 @@ jobs:
 
   chart:
     runs-on: ubuntu-latest
+    # The chart references the image by tag; publishing it first opens a
+    # window where Artifact Hub's security scanner finds no image and the
+    # package shows a scanning error. Image first, then chart.
+    needs: [image]
     permissions:
       contents: read
       packages: write
