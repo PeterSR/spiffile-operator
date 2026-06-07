@@ -286,6 +286,25 @@ func (r *Reconciler) rebuildBundles(ctx context.Context) error {
 			return err
 		}
 	}
+
+	// A namespace whose last ServiceIdentity was deleted never makes it into
+	// namespaceDomains, so the loop above would leave its bundle ConfigMap
+	// stale — workloads there would keep trusting revoked identities. Rewrite
+	// every managed bundle ConfigMap in such namespaces down to the keys that
+	// claims still earn (mirroring the claim controller's prune semantics).
+	var cms corev1.ConfigMapList
+	if err := r.List(ctx, &cms, client.MatchingLabels{managedByLabel: managedByValue}); err != nil {
+		return err
+	}
+	for i := range cms.Items {
+		cm := &cms.Items[i]
+		if cm.Name != BundleConfigMapName || namespaceDomains[cm.Namespace] != nil {
+			continue
+		}
+		if err := r.upsertBundleConfigMap(ctx, cm.Namespace, map[string]string{}, claimed); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
