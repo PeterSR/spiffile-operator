@@ -8,6 +8,15 @@ Until v1.0.0, minor versions may contain breaking changes to the `v1alpha1` API.
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-06-07
+
+### Fixed
+
+- Deleting the last `ServiceIdentity` in a namespace now prunes the
+  namespace's `spiffile-bundle` ConfigMap, so revocation by deletion
+  propagates instead of leaving a stale bundle that still trusts the
+  revoked identity. Data keys owned by claims are preserved. (#5)
+
 ## [0.1.1] - 2026-06-06
 
 ### Changed
@@ -36,6 +45,7 @@ Until v1.0.0, minor versions may contain breaking changes to the `v1alpha1` API.
 - `kubectl-spiffile` plugin with `extract` for zero-downtime migration of a
   trust domain out of the cluster.
 
-[Unreleased]: https://github.com/PeterSR/spiffile-operator/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/PeterSR/spiffile-operator/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/PeterSR/spiffile-operator/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/PeterSR/spiffile-operator/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/PeterSR/spiffile-operator/releases/tag/v0.1.0
