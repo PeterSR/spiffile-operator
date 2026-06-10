@@ -5,6 +5,7 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"time"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -19,8 +20,9 @@ import (
 	spiffilewebhook "github.com/PeterSR/spiffile-operator/internal/webhook"
 )
 
-// webhookCertDir is controller-runtime's default serving cert location; pod
-// injection is enabled automatically when a TLS cert is mounted there.
+// webhookCertDir is controller-runtime's default serving cert location; when
+// pod injection is enabled the operator waits for a TLS cert to appear here
+// before registering the webhook.
 const webhookCertDir = "/tmp/k8s-webhook-server/serving-certs"
 
 func main() {
@@ -68,17 +70,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Pod injection is optional: it activates when serving certs are mounted
-	// (see deploy/webhook.yaml). Without certs the webhook server never starts.
-	if _, err := os.Stat(filepath.Join(webhookCertDir, "tls.crt")); err == nil {
-		mgr.GetWebhookServer().Register("/inject-pod", &admission.Webhook{
-			Handler: spiffilewebhook.NewPodInjector(mgr.GetClient(), scheme),
-		})
-		logger.Info("pod injection webhook enabled")
-	} else {
-		logger.Info("no webhook serving certs found, pod injection disabled")
-	}
-
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
 		logger.Error(err, "adding health check")
 		os.Exit(1)
@@ -88,8 +79,40 @@ func main() {
 		os.Exit(1)
 	}
 
+	ctx := ctrl.SetupSignalHandler()
+
+	// Pod injection is optional, enabled via WEBHOOK_ENABLED (the chart sets it
+	// from webhook.enabled). Registration is gated on intent, not a one-shot
+	// cert check: cert-manager may issue the serving cert slightly after the
+	// operator starts, and the webhook server crashes if the cert is missing
+	// when it starts. So wait for the mounted cert in the background, then
+	// register — the manager, controllers and health probes come up immediately
+	// meanwhile, and the webhook server starts cleanly once the cert lands.
+	if os.Getenv("WEBHOOK_ENABLED") == "true" {
+		certPath := filepath.Join(webhookCertDir, "tls.crt")
+		go func() {
+			for {
+				if _, err := os.Stat(certPath); err == nil {
+					break
+				}
+				select {
+				case <-ctx.Done():
+					return
+				case <-time.After(2 * time.Second):
+					logger.Info("waiting for webhook serving cert", "path", certPath)
+				}
+			}
+			mgr.GetWebhookServer().Register("/inject-pod", &admission.Webhook{
+				Handler: spiffilewebhook.NewPodInjector(mgr.GetClient(), scheme),
+			})
+			logger.Info("pod injection webhook enabled")
+		}()
+	} else {
+		logger.Info("pod injection webhook disabled")
+	}
+
 	logger.Info("starting spiffile operator")
-	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
+	if err := mgr.Start(ctx); err != nil {
 		logger.Error(err, "running manager")
 		os.Exit(1)
 	}
