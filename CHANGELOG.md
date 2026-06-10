@@ -8,6 +8,23 @@ Until v1.0.0, minor versions may contain breaking changes to the `v1alpha1` API.
 
 ## [Unreleased]
 
+## [0.1.4] - 2026-06-10
+
+### Fixed
+
+- Pod-injection webhook no longer permanently disables itself when the
+  operator starts before cert-manager issues the serving cert. Registration is
+  now gated on intent (`WEBHOOK_ENABLED`, set by the chart from
+  `webhook.enabled`) and waits for the mounted cert to appear before
+  registering, so the webhook server starts cleanly once the cert lands instead
+  of leaving a `failurePolicy: Fail` webhook with no backend that blocks all
+  pod creation in selected namespaces. (#10)
+
+### Added
+
+- `webhook.failurePolicy` chart value (default `Fail`) to optionally run the
+  injection webhook fail-open (`Ignore`).
+
 ## [0.1.3] - 2026-06-09
 
 ### Changed
@@ -51,7 +68,8 @@ Until v1.0.0, minor versions may contain breaking changes to the `v1alpha1` API.
 - `kubectl-spiffile` plugin with `extract` for zero-downtime migration of a
   trust domain out of the cluster.
 
-[Unreleased]: https://github.com/PeterSR/spiffile-operator/compare/v0.1.3...HEAD
+[Unreleased]: https://github.com/PeterSR/spiffile-operator/compare/v0.1.4...HEAD
+[0.1.4]: https://github.com/PeterSR/spiffile-operator/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/PeterSR/spiffile-operator/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/PeterSR/spiffile-operator/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/PeterSR/spiffile-operator/compare/v0.1.0...v0.1.1

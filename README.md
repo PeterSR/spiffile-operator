@@ -88,7 +88,8 @@ Or raw manifests:
 ```bash
 kubectl apply -f deploy/crd.yaml
 kubectl apply -f deploy/operator.yaml   # set the image first
-kubectl apply -f deploy/webhook.yaml    # optional pod injection (needs cert-manager)
+kubectl apply -f deploy/webhook.yaml    # optional pod injection (needs cert-manager;
+                                        # also set WEBHOOK_ENABLED=true in operator.yaml)
 ```
 
 Released images are multi-arch (amd64/arm64), keyless-signed and carry SLSA

@@ -47,7 +47,7 @@ webhooks:
   - name: inject.spiffile.io
     admissionReviewVersions: ["v1"]
     sideEffects: None
-    failurePolicy: Fail
+    failurePolicy: {{ .Values.webhook.failurePolicy }}
     namespaceSelector:
       matchLabels:
         spiffile.io/injection: enabled

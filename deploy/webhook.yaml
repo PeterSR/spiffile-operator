@@ -1,5 +1,8 @@
 # Optional pod-injection webhook. Requires cert-manager.
 #
+# Also set WEBHOOK_ENABLED=true on the operator Deployment (see
+# deploy/operator.yaml) so the operator serves the webhook.
+#
 # Injection applies only in namespaces labeled:
 #   spiffile.io/injection: enabled
 # Pods opt in with the spiffile.io/identity (or spiffile.io/inject) annotation.

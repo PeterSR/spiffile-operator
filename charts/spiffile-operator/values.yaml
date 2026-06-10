@@ -8,6 +8,10 @@ image:
 # pods opt in via the spiffile.io/identity or spiffile.io/inject annotation.
 webhook:
   enabled: false
+  # Admission failure policy when the webhook is unreachable:
+  #   Fail   - block pod creation in selected namespaces (default, fail-closed)
+  #   Ignore - admit pods un-injected (favors availability over guaranteed injection)
+  failurePolicy: Fail
 
 replicas: 1
 
